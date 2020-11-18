@@ -18,6 +18,12 @@ def index():
     """Video streaming home page."""
     return render_template('index.html')
 
+@app.route('/info')
+def home():
+    """Video streaming home page."""
+    return render_template('info.html')
+
+
 @app.route('/camera1')
 def camera1():
     """Video streaming home page."""
@@ -27,6 +33,11 @@ def camera1():
 def camera2():
     """Video streaming home page."""
     return render_template('camera2.html')
+
+@app.route('/camera3')
+def camera3():
+    """Video streaming home page."""
+    return render_template('camera3.html')
 
 
 def detect(frame):
@@ -102,13 +113,47 @@ def gen2():
         image2 = cv2.imencode('.jpg', frame2)[1].tobytes()
         yield b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + image2 + b'\r\n'
 
+def gen3():
+    writer3 = None
+    print('[INFO] Opening Video from path.')
+    video3 = cv2.VideoCapture('http://192.168.0.19:8090/?action=stream')
+    check3, frame3 = video3.read()
+    if check3 == False:
+        print('Video Not Found. Please Enter a Valid Path (Full path of Video Should be Provided).')
+        return
+
+    print('Detecting people...')
+    while video3.isOpened():
+        # check is True if reading was successful
+        check3, frame3 = video3.read()
+
+        if check3:
+            frame3 = imutils.resize(frame3, width=min(800, frame3.shape[1]))
+            frame3 = detect(frame3)
+
+            if writer3 is not None:
+                writer3.write(frame3)
+
+            key3 = cv2.waitKey(1)
+            if key3 == ord('q'):
+                break
+        else:
+            break
+        image3 = cv2.imencode('.jpg', frame3)[1].tobytes()
+        yield b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + image3 + b'\r\n'
 
 
 @app.route('/video_feed1')
 def video_feed1():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen1(),mimetype='multipart/x-mixed-replace; boundary=frame')
+
 @app.route('/video_feed2')
 def video_feed2():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen2(),mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/video_feed3')
+def video_feed3():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(gen3(),mimetype='multipart/x-mixed-replace; boundary=frame')
